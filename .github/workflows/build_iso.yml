@@ -2,7 +2,9 @@ name: Build ISOs
 
 on:
   workflow_dispatch:
-  workflow_call:
+  workflow_run:
+    workflows: ['Build Bazzite']
+    types: [completed]
 
 env:
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
@@ -15,6 +17,7 @@ concurrency:
 
 jobs:
   build-iso:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -167,5 +170,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rclone
           rclone copy $SOURCE_DIR R2:bazzite
+
 
 
