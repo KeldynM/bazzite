@@ -144,7 +144,7 @@ jobs:
           echo "iso-upload-dir=${ISO_UPLOAD_DIR}" >> $GITHUB_OUTPUT
 
       - name: Upload ISOs and Checksum to Job Artifacts
-        if: github.ref_name == 'testing'
+        # Removed branch restriction for personal fork
         #if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
@@ -170,6 +170,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rclone
           rclone copy $SOURCE_DIR R2:bazzite
+
 
 
 
