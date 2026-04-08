@@ -56,15 +56,6 @@ jobs:
       matrix:
         image:
           - bazzite
-          - bazzite-gnome
-          - bazzite-deck
-          - bazzite-deck-gnome
-          - bazzite-deck-nvidia
-          - bazzite-deck-nvidia-gnome
-          - bazzite-nvidia
-          - bazzite-gnome-nvidia
-          - bazzite-nvidia-open
-          - bazzite-gnome-nvidia-open
         include:
           - fedora_version: 43
             kernel_version: ${{ (github.ref_name == 'testing' || github.ref_name == 'unstable') && 'latest' || 'latest' }}
@@ -135,7 +126,7 @@ jobs:
           # Define push and pull registries
           #
           PULL_REGISTRY=ghcr.io/ublue-os
-          PUSH_REGISTRY=ghcr.io/${{ github.repository_owner }}
+          PUSH_REGISTRY=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
           echo "push_registry=${PUSH_REGISTRY}" >> $GITHUB_OUTPUT
           echo "pull_registry=${PULL_REGISTRY}" >> $GITHUB_OUTPUT
           echo "output_image=${PUSH_REGISTRY}/${{ matrix.image }}" >> $GITHUB_OUTPUT
@@ -516,9 +507,17 @@ jobs:
             done
             log_sum '```'
 
-            digest=$(sudo skopeo inspect --format '{{.Digest}}' docker://${OUTPUT_IMAGE}:${VERSION})
-            echo "digest=${digest}" >> $GITHUB_OUTPUT
 
+
+      - name: Get image digest
+        id: get-digest
+        if: github.event_name != 'pull_request'
+        env:
+          OUTPUT_IMAGE: ${{ steps.base.outputs.output_image }}
+          VERSION: ${{ steps.relabel.outputs.version }}
+        run: |
+          digest=$(sudo skopeo inspect --format '{{.Digest}}' docker://${OUTPUT_IMAGE}:${VERSION})
+          echo "digest=${digest}" >> $GITHUB_OUTPUT
       - name: Install Cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
@@ -528,7 +527,7 @@ jobs:
       - name: Sign container image
         if: github.event_name != 'pull_request'
         run: |
-          cosign sign -y --key env://COSIGN_PRIVATE_KEY --new-bundle-format=false ${{ steps.base.outputs.output_image }}@${{ steps.push.outputs.digest }}
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY --new-bundle-format=false ${{ steps.base.outputs.output_image }}@${{ steps.get-digest.outputs.digest }}
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
 
@@ -546,7 +545,7 @@ jobs:
         id: upload-sbom
         env:
           IMAGE: ${{ steps.base.outputs.output_image }}
-          DIGEST: ${{ steps.push.outputs.digest }}
+          DIGEST: ${{ steps.get-digest.outputs.digest }}
           SBOM: ${{ steps.generate-sbom.outputs.SBOM }}
         run: |
           cd "$(dirname "${SBOM}")"
@@ -574,7 +573,7 @@ jobs:
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-name: ${{ steps.base.outputs.output_image }}
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-digest: ${{ steps.get-digest.outputs.digest }}
           push-to-registry: true
 
   generate_release:
