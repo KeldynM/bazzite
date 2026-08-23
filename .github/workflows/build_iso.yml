@@ -32,15 +32,7 @@ jobs:
       matrix:
         image_name:
           - bazzite
-          - bazzite-nvidia
-          - bazzite-nvidia-open
-          - bazzite-gnome
-          - bazzite-gnome-nvidia
-          - bazzite-gnome-nvidia-open
-          - bazzite-deck
-          - bazzite-deck-gnome
-          - bazzite-deck-nvidia
-          - bazzite-deck-nvidia-gnome
+        major_version: [44]
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
@@ -193,7 +185,6 @@ jobs:
           done
 
       - name: Upload ISOs and Checksum to Job Artifacts
-        if: github.ref_name == 'testing' || github.ref_name == 'unstable'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ matrix.image_name }}-${{ steps.generate-tag.outputs.tag }}-${{ matrix.major_version}}
@@ -204,7 +195,7 @@ jobs:
           overwrite: true
 
       - name: Upload ISOs and Checksum to R2
-        if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
+        if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && github.repository_owner == 'ublue-os'
         shell: bash
         env:
           RCLONE_CONFIG_R2_TYPE: s3

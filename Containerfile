@@ -202,7 +202,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
     dnf5 -y install \
-        $(/ctx/ghcurl https://api.github.com/repos/ublue-os/cicpoffs/releases/latest | jq -r --arg name "cicpoffs-fc${FEDORA_VERSION}.rpm" '.assets[] | select(.name == $name).browser_download_url') && \
+        "https://github.com/ublue-os/cicpoffs/releases/download/master/cicpoffs-fc44.rpm" && \
     dnf5 -y copr enable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y install \
         scx-scheds \
@@ -425,6 +425,17 @@ RUN --mount=type=cache,dst=/var/cache \
         ublue-os-media-automount-udev && \
     { systemctl enable ublue-os-media-automount.service || true; } && \
     /ctx/cleanup
+
+# >>> COBALT CUSTOM PACKAGES HOOK (managed by Cobalt — do not edit)
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    if [ -f /ctx/build_files/.cobalt-packages ]; then \
+        dnf5 -y install $(cat /ctx/build_files/.cobalt-packages) \
+    ; fi
+# <<< COBALT CUSTOM PACKAGES HOOK
 
 # Cleanup & Finalize
 COPY system_files/overrides /
