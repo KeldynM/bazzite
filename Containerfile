@@ -438,6 +438,17 @@ RUN --mount=type=cache,dst=/var/cache \
     { systemctl enable ublue-os-media-automount.service || true; } && \
     /ctx/cleanup
 
+# >>> COBALT CUSTOM PACKAGES HOOK (managed by Cobalt — do not edit)
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    if [ -f /ctx/build_files/.cobalt-packages ]; then \
+        dnf5 -y install $(cat /ctx/build_files/.cobalt-packages) \
+    ; fi
+# <<< COBALT CUSTOM PACKAGES HOOK
+
 # Cleanup & Finalize
 COPY system_files/overrides /
 
